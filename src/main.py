@@ -25,19 +25,64 @@ class WebSocketClient:
             print('client callback handling')
        
 class Sock:
-    pass
+    def create_server(self, addr):
+        pass
+
+    def server_accept(self, server):
+        pass
+
+    def create_connect(self, addr):
+        pass
 
 class WebSocketChannel:
-    pass
+    def __init__(self, sock):
+        self.sock = sock    
+    
+    def write(self, data):
+        pass
 
+    def read(self):
+        pass
+
+    def request__handshake(self):
+        pass
+    def response_handshake(self):
+        pass 
+    
+    def request_ping(self):
+        pass
+    def response_pong(self):
+        pass
+ 
 class FrameStream:
-    pass
+    def encode_frame(self, data):
+        pass
+
+    def decode_frame(self):
+        pass
 
 class HandShake:
-    pass
+    def encode_handshake_req(self):
+        pass
+    
+    def decode_handshake_resp(self):
+        pass
+
+    def decode_handshake_req(self):
+        pass
+    def encode_handshake_resp(self):
+        pass
 
 class Pingpong:
-    pass
+    def encode_ping(self):
+        pass
+    def decode_pong(self):
+        pass
+
+    def decode_ping(self):
+        pass
+    def encode_pong(self):
+        pass
 
 if __name__=='__main__':
     print('main entry:主入口')
