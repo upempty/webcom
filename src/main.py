@@ -2,7 +2,12 @@
 #coding:utf-8
 
 import time
+import sys
+
 class WebSocketServer:
+    def __init__(self):
+        print ('server started')
+
     def run_forever(self):
         #createServer
         #accept
@@ -15,6 +20,9 @@ class WebSocketServer:
             print('server callback handling')
 
 class WebSocketClient:
+    def __init__(self):
+        print ('client started')
+
     def run_forever(self):
         #connect()
         #handshake_req()
@@ -44,7 +52,7 @@ class WebSocketChannel:
     def read(self):
         pass
 
-    def request__handshake(self):
+    def request_handshake(self):
         pass
     def response_handshake(self):
         pass 
@@ -85,6 +93,20 @@ class Pingpong:
         pass
 
 if __name__=='__main__':
+
+    print (sys.argv)
+    if not (len(sys.argv) == 2):
+        print ('argv incorrect')
+        sys.exit() 
+    id = int(sys.argv[1])
+    
+    daemon_role = {
+        1: WebSocketClient,
+        2: WebSocketServer
+    }
+    
     print('main entry:主入口')
-    wserver = WebSocketClient()
-    wserver.run_forever()
+    #wserver = WebSocketClient()
+    ws = daemon_role.get(id, WebSocketClient)()
+    ws.run_forever()
+
