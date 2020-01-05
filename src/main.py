@@ -3,6 +3,7 @@
 
 import time
 import sys
+import _thread as thread
 
 class WebSocketServer:
     def __init__(self, on_open=None, on_msg=None):
@@ -136,7 +137,11 @@ class Pingpong:
 
 def on_open(ws):
     print ('on open init message')
-
+    def run(*args):
+        while True:
+            time.sleep(2)
+            print ('thread run inside on_open!!!!!!')
+    thread.start_new_thread(run, ())
 def on_msg(ws, *args):
     print ('on message!!!!')
 
