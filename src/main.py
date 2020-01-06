@@ -26,7 +26,7 @@ class WebSocketServer:
     def read(self):
         #1
         print ('read on server')
-        msg = self.ws.read()
+        msg = self.ws.read_frame()
         self._callback(self.on_msg, msg)
         #2 ping or pong
 
@@ -56,7 +56,7 @@ class WebSocketClient:
     def read(self):
         #1
         print ('read on client')
-        msg = self.ws.read()
+        msg = self.ws.read_frame()
         self._callback(self.on_msg, msg)
         #2 ping or pong
 
@@ -90,7 +90,7 @@ class WebSocketChannel:
     def write(self, data):
         pass
 
-    def read(self):
+    def read_frame(self):
         print ('WebSocketChannel read')
         return 0
 
