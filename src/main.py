@@ -106,6 +106,45 @@ class WebSocketChannel:
         pass
  
 class FrameStream:
+'''
+  0                   1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-------+-+-------------+-------------------------------+
+ |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+ |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+ |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+ | |1|2|3|       |K|             |                               |
+ +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+ |     Extended payload length continued, if payload len == 127  |
+ + - - - - - - - - - - - - - - - +-------------------------------+
+ |                               |Masking-key, if MASK set to 1  |
+ +-------------------------------+-------------------------------+
+ | Masking-key (continued)       |          Payload Data         |
+ +-------------------------------- - - - - - - - - - - - - - - - +
+ :                     Payload Data continued ...                :
+ + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+ |                     Payload Data continued ...                |
+ +---------------------------------------------------------------+
+
+ LENGTH_7=0x7E
+ < LENGTH_7: LEN_BYTES=1, MASK_OFFSET=2, MASK_LEN=4
+ = LENGTH_7: LEN_BYTES=2, MASK_OFFSET=4, MASK_LEN=4
+ > LENGTH_7: LEN_BYTES=8, MASK_OFFSET=10, MASK_LEN=4
+ HeaderType = { 0: {'opcode': 'B ', 'PayloadLen': 'B ', 'MaskKey':'I '},
+                1: {'opcode': 'B ', 'PayloadLen': 'B ', 'RealPayloadLen': 'H ', 'MaskKey':'I '},
+                2: {'opcode': 'B ', 'PayloadLen': 'B ', 'RealPayloadLen': 'Q ', 'MaskKey':'I '}
+              }
+if len < LENGTH_7:
+    Header = HeaderType[0]
+elif len == LENGTH_7:
+    Header = HeaderType[1]
+else:
+    Header = HeaderType[2]
+
+bytes = struct.pack(fmt, x1, x2,..)
+x1,x2,... = struct.unpack(fmt, bytes)
+
+'''
     def encode_frame(self, data):
         pass
 
