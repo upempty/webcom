@@ -127,6 +127,9 @@ class FrameStream:
  +---------------------------------------------------------------+
 
  LENGTH_7=0x7E
+ LENGTH_16=1<<16
+
+7BITS:
  < LENGTH_7: LEN_BYTES=1, MASK_OFFSET=2, MASK_LEN=4
  = LENGTH_7: LEN_BYTES=2, MASK_OFFSET=4, MASK_LEN=4
  > LENGTH_7: LEN_BYTES=8, MASK_OFFSET=10, MASK_LEN=4
@@ -134,9 +137,9 @@ class FrameStream:
                 1: {'opcode': 'B ', 'PayloadLen': 'B ', 'RealPayloadLen': 'H ', 'MaskKey':'I '},
                 2: {'opcode': 'B ', 'PayloadLen': 'B ', 'RealPayloadLen': 'Q ', 'MaskKey':'I '}
               }
-if len < LENGTH_7:
+if data_len < LENGTH_7:
     Header = HeaderType[0]
-elif len == LENGTH_7:
+elif data_len < LENGTH_16:
     Header = HeaderType[1]
 else:
     Header = HeaderType[2]
