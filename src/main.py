@@ -106,7 +106,7 @@ class WebSocketChannel:
         pass
  
 class FrameStream:
-'''
+    '''
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  +-+-+-+-+-------+-+-------------+-------------------------------+
@@ -147,9 +147,19 @@ else:
 bytes = struct.pack(fmt, x1, x2,..)
 x1,x2,... = struct.unpack(fmt, bytes)
 
-'''
+    '''
     def encode_frame(self, data):
         pass
+        '''
+        length = len(data)
+        endianess = ">"
+        fmt = endianess
+        for i in Header:
+            fmt += Header[i]    
+        header = struct.pack(fmt, opcode, payloadlen, maskkey) 
+        m = header + data
+        return m
+        '''
 
     def decode_frame(self):
         pass
