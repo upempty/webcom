@@ -23,6 +23,10 @@ class WebSocketServer:
             self.read()
             print('server callback handling')
 
+    def write(self, data):
+        print ('write:', data)
+        self.ws.write_frame(data)
+
     def read(self):
         #1
         print ('read on server')
@@ -87,8 +91,11 @@ class WebSocketChannel:
         self.sock = sock    
         print ('WebSocketChannel init')
     
-    def write(self, data):
-        pass
+    def write_frame(self, data):
+        print ('write frame in channel')
+        dd = FrameStream.encode_frame(1, data) 
+        print ('dd=', dd)
+        #self.sock.send(dd)
 
     def read_frame(self):
         print ('WebSocketChannel read')
@@ -104,6 +111,24 @@ class WebSocketChannel:
         pass
     def response_pong(self):
         pass
+
+import os
+import struct
+import array
+import six
+
+LENGTH_7 = 0x7E
+LENGTH_16 = 0x1<<16
+"""
+7BITS:
+ < LENGTH_7: LEN_BYTES=1, MASK_OFFSET=2, MASK_LEN=4
+ = LENGTH_7: LEN_BYTES=2, MASK_OFFSET=4, MASK_LEN=4
+ > LENGTH_7: LEN_BYTES=8, MASK_OFFSET=10, MASK_LEN=4
+"""
+HeaderType = {-1: ['>', 'B', 'B'],
+               0: ['>', 'B', 'B', 'H'],
+               1: ['>', 'B', 'B', 'Q']
+             }
  
 class FrameStream:
     '''
@@ -125,41 +150,38 @@ class FrameStream:
  + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
  |                     Payload Data continued ...                |
  +---------------------------------------------------------------+
-
- LENGTH_7=0x7E
- LENGTH_16=1<<16
-
-7BITS:
- < LENGTH_7: LEN_BYTES=1, MASK_OFFSET=2, MASK_LEN=4
- = LENGTH_7: LEN_BYTES=2, MASK_OFFSET=4, MASK_LEN=4
- > LENGTH_7: LEN_BYTES=8, MASK_OFFSET=10, MASK_LEN=4
- HeaderType = { 0: {'opcode': 'B ', 'PayloadLen': 'B ', 'MaskKey':'I '},
-                1: {'opcode': 'B ', 'PayloadLen': 'B ', 'RealPayloadLen': 'H ', 'MaskKey':'I '},
-                2: {'opcode': 'B ', 'PayloadLen': 'B ', 'RealPayloadLen': 'Q ', 'MaskKey':'I '}
-              }
-if data_len < LENGTH_7:
-    Header = HeaderType[0]
-elif data_len < LENGTH_16:
-    Header = HeaderType[1]
-else:
-    Header = HeaderType[2]
-
-bytes = struct.pack(fmt, x1, x2,..)
 x1,x2,... = struct.unpack(fmt, bytes)
 
     '''
-    def encode_frame(self, data):
-        pass
-        '''
+    @staticmethod
+    def _make_masked(mask_key, data):
+        arr_data = array.array("B", data)
+        for i in range(len(arr_data)):
+            arr_data[i] ^= mask_key[i % 4]
+        d = mask_key + arr_data.tobytes()
+        return d
+    
+    @classmethod
+    def encode_frame(self, opcode, data):
+        fin_opcode = (0x1<<7) | opcode
         length = len(data)
-        endianess = ">"
-        fmt = endianess
-        for i in Header:
-            fmt += Header[i]    
-        header = struct.pack(fmt, opcode, payloadlen, maskkey) 
-        m = header + data
+        if length < LENGTH_7:
+            header_index = -1
+            mask_payload_len = (0x1<<7) | length
+            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, mask_payload_len)
+        elif length < LENGTH_16:
+            header_index = 0
+            mask_payload_len = (0x1<<7) | LENGTH_7 
+            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, mask_payload_len, length)
+        else:
+            header_index = 1
+            mask_payload_len = (0x1<<7) | (LENGTH_7+1)
+            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, mask_payload_len, length)
+        mask = os.urandom(4) 
+        #mask_data = self._make_masked(mask, data.encode("utf-8"))
+        mask_data = self._make_masked(mask, six.b(data))
+        m = header1 + mask_data
         return m
-        '''
 
     def decode_frame(self):
         pass
@@ -187,12 +209,16 @@ class Pingpong:
     def encode_pong(self):
         pass
 
+import json
+AA = json.dumps({1: 'a', 2: 'b'})
 def on_open(ws):
     print ('on open init message')
     def run(*args):
         while True:
             time.sleep(2)
-            print ('thread run inside on_open!!!!!!')
+            print ('thread run inside on_open!!!!!!send')
+            ws.write(AA)
+            print (AA)
     thread.start_new_thread(run, ())
 def on_msg(ws, *args):
     print ('on message!!!!')
