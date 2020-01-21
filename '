@@ -182,21 +182,16 @@ x1,x2,... = struct.unpack(fmt, bytes)
         mask_data = self._make_masked(mask, six.b(data))
         m = header1 + mask_data
         return m
-    
-    #not tested
-    """
+
     def decode_frame0(self, data_fin_opcode): #after read_bytes(2)
-        #return (fin, opcode)
         pass
     def decode_frame1(self, data_mask_init_payload):
-        #return (mask, initpayload)
         pass
     def decode_frame2(self, maskkey_data): #based on initpayload <0x7E, 0x7E, 0x7F after read_bytes(4); read_bytes(2+4);read_bytes(4+8);read_bytes(dlen)
-        #return (mask_key, data)
         pass
-    #all variable to store local data not global.    
-    @classmethod 
-    def decode_frame(self):
+    def decode_framedata(self, real_data_length_maskkey):
+        
+    def decode_frame(self, data):
         #sock.recv(1024) to buffer
         #data from buffer
         #a=bytearray()a.append(byte)
@@ -209,7 +204,6 @@ x1,x2,... = struct.unpack(fmt, bytes)
             makskeyoffset=2:6; 4:8; 10:14
             dataoffset=6:x+6; 8:x+8; 14:x+10
         pass
-    """
 
 class HandShake:
     def encode_handshake_req(self):
