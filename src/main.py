@@ -13,8 +13,8 @@ class WebSocketServer:
         self.on_msg = on_msg
 
     def run_forever(self):
-        Sock.create_server(('127.0.0.1', 9001))
-        conn = Sock.server_accept()
+        server = Sock.create_server(('127.0.0.1', 9001))
+        conn = Sock.server_accept(server)
         self.ws = WebSocketChannel(conn)
         self.ws.response_handshake()
         self._callback(self.on_open) #use for on_xx(msg, ping)
@@ -24,7 +24,7 @@ class WebSocketServer:
             print('server callback handling')
 
     def write(self, data):
-        print ('write:', data)
+        print ('==write:', data)
         self.ws.write_frame(data)
 
     def read(self):
@@ -54,8 +54,14 @@ class WebSocketClient:
         self._callback(self.on_open) #use for on_xx(msg, ping)
         while True:
             time.sleep(2)
+            print('client ready to read')
             self.read()
+            print('client ready to read done')
             print('client callback handling')
+
+    def write(self, data):
+        print ('==write:', data)
+        self.ws.write_frame(data)
 
     def read(self):
         #1
@@ -69,22 +75,32 @@ class WebSocketClient:
         if callback:
             callback(self, *args)
 
+import socket
 
-       
 class Sock:
     @classmethod
     def create_server(self, addr):
         print ('create server:{})'.format(addr))
+        so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        so.bind(addr)
+        so.listen(5)
+        return so
+        
+        
 
     @classmethod
-    def server_accept(self):
+    def server_accept(self, server):
         print ('server accept')
-        return 0
+        conn, addr = server.accept() 
+        print ('accepted: server accept', addr)
+        return conn 
 
     @classmethod
     def create_connect(self, addr):
-        print ('create connect to {}'.format(addr))
-        return 0
+        so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        so.connect(addr)
+        print ('create connected to {}'.format(addr))
+        return so 
 
 class WebSocketChannel:
     def __init__(self, sock):
@@ -94,12 +110,34 @@ class WebSocketChannel:
     def write_frame(self, data):
         print ('write frame in channel')
         dd = FrameStream.encode_frame(1, data) 
-        print ('dd=', dd)
-        #self.sock.send(dd)
+        print ('write bytes:', dd)
+        self.sock.send(dd)
 
     def read_frame(self):
-        print ('WebSocketChannel read')
-        return 0
+        #Sock.recv_bytes(self.sock, 2)
+        first2bytes = self.sock.recv(2)
+        print('first 2 bytes:{}, len={}'.format(first2bytes, len(first2bytes)))
+        fin, opcode = FrameStream.decode_frame0(first2bytes[0])
+        mask, init_payloadlen = FrameStream.decode_frame1(first2bytes[1])
+        data = b""
+        if init_payloadlen < LENGTH_7:
+            maskkey_data = self.sock.recv(init_payloadlen+4)
+            print ("LEN compare", len(maskkey_data), init_payloadlen+4) 
+            maskkey, data = FrameStream.decode_frame2(init_payloadlen, maskkey_data)
+        elif baselen == LENGTH_7:
+            datalen = self.sock.recv(2)
+            data_len = struct.unpack('>H', datalen)[0]
+            maskkey_data = self.sock.recv(data_len+4)
+            maskkey, data = FrameStream.decode_frame2(init_payloadlen, maskkey_data)
+        elif baselen > LENGTH_7:
+            datalen = self.sock.recv(8)
+            data_len = struct.unpack('>Q', datalen)[0]
+            maskkey_data = self.sock.recv(data_len+4)
+            maskkey, data = FrameStream.decode_frame2(init_payloadlen, maskkey_data)
+        
+        str = data.decode()
+        print ('==read on WebSocketChannel', str)
+        return str 
 
     def request_handshake(self):
         print ('request handshake')
@@ -183,18 +221,32 @@ x1,x2,... = struct.unpack(fmt, bytes)
         m = header1 + mask_data
         return m
     
-    #not tested
-    """
+    @classmethod
     def decode_frame0(self, data_fin_opcode): #after read_bytes(2)
         #return (fin, opcode)
-        pass
+        fin = data_fin_opcode >> 7 & 1
+        opcode = data_fin_opcode & 0xf
+        return fin, opcode
+
+    @classmethod
     def decode_frame1(self, data_mask_init_payload):
         #return (mask, initpayload)
-        pass
-    def decode_frame2(self, maskkey_data): #based on initpayload <0x7E, 0x7E, 0x7F after read_bytes(4); read_bytes(2+4);read_bytes(4+8);read_bytes(dlen)
+        mask = data_mask_init_payload >> 7 & 1
+        init_payload_len = data_mask_init_payload & 0x7F
+        return mask, init_payload_len
+
+    @classmethod
+    def decode_frame2(self, baselen, maskkey_data): 
+        #based on initpayload <0x7E, 0x7E, 0x7F after read_bytes(4); read_bytes(2+4);read_bytes(4+8);read_bytes(dlen)
+        mask_key = maskkey_data[:4] 
+        raw_data = maskkey_data[4:]
+        maskkey_data_d = self._make_masked(mask_key, raw_data)
+        data = maskkey_data_d[4:]
+        return mask_key, data
         #return (mask_key, data)
-        pass
+
     #all variable to store local data not global.    
+    """
     @classmethod 
     def decode_frame(self):
         #sock.recv(1024) to buffer
