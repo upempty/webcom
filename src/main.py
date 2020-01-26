@@ -140,10 +140,20 @@ class WebSocketChannel:
         return str 
 
     def request_handshake(self):
-        print ('request handshake')
+        print ('request handshake begin')
+        data = HandShake.encode_handshake_req(host='127.0.0.1', port='9001', resource='chat')
+        self.sock.send(data)
+        data_recv =self.sock.recv(1024)
+        ret = HandShake.decode_handshake_resp(data_recv)
+        print ('request handshake end')
 
     def response_handshake(self):
-        print ('reponse handshake')
+        print ('reponse handshake begin')
+        data =self.sock.recv(1024)
+        host, accept_key = HandShake.decode_handshake_req(data)
+        data_send = HandShake.encode_handshake_resp('127.0.0.1:9001', accept_key)
+        self.sock.send(data_send)
+        print ('reponse handshake end')
     
     def request_ping(self):
         pass
@@ -262,18 +272,93 @@ x1,x2,... = struct.unpack(fmt, bytes)
             dataoffset=6:x+6; 8:x+8; 14:x+10
         pass
     """
+import random
+import base64
+import hashlib
 
 class HandShake:
-    def encode_handshake_req(self):
-        pass
-    
-    def decode_handshake_resp(self):
-        pass
+    @classmethod
+    def encode_handshake_req(self, host, port, resource):
+        bytes_key = bytes(random.getrandbits(8) for _ in range(16))
+        key = base64.b64encode(bytes_key).decode()
+        header = {'host': '{}:{}'.format(host, port),
+                  'Connection': 'Upgrade',
+                  'Upgrade': 'websocket',
+                  'User-Agent': 'Python3.7',
+                  'Origin': 'http://{}:{}'.format(host, port),
+                  'Sec-WebSocket-Key': key,
+                  'Sec-WebSocket-Version': '13'
+                 }
+        headers = ['{}: {}'.format(k, item) for k, item in header.items()]
+        headers.insert(0, 'GET /{} HTTP/1.1'.format(resource))
+        headers.append('\r\n')
+        req =  '\r\n'.join(headers)
+        print ('handshake req sending=======\n', req)
+        print ('handshake req sending=======end\n')
+        data = req.encode()
+        return data
+ 
+    @classmethod
+    def decode_handshake_resp(self, data):
+        data = str(data, encoding='utf-8')
+        print ('handshake resp recv=======\n', data)
+        print ('handshake resp recv=======end\n')
+        header, _ = data.split('\r\n\r\n', 1)
+        header_list = header.split('\r\n')
+        for i in header_list:
+            print (i)
+        return 0
 
-    def decode_handshake_req(self):
-        pass
-    def encode_handshake_resp(self):
-        pass
+    @classmethod
+    def decode_handshake_req(self, data):
+
+        def ws_accept_key(sec_key):
+            MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+            sha1 = hashlib.sha1()
+            sha1.update((sec_key + MAGIC).encode()) 
+            return base64.b64encode(sha1.digest()).decode()
+
+        data = str(data, encoding='utf-8')
+        print ('handshake req recv=======\n', data)
+        print ('handshake req recv=======end\n')
+ 
+        header, _ = data.split('\r\n\r\n', 1)
+        header_list = header.split('\r\n')
+        h_dict = {}
+        for i,s in enumerate(header_list):
+            print (i,s)
+            if i != 0:
+                k, v = header_list[i].split(':', 1)
+                h_dict[k] = v.strip() 
+
+        protocols = header_list[0].split()[:2]
+        print('header[0] recv', header, header_list)
+        print('h dict', h_dict)
+
+        host = h_dict['host'] 
+        key = h_dict['Sec-WebSocket-Key'] 
+        accept_key = ws_accept_key(key)
+        return host, accept_key
+
+    @classmethod
+    def encode_handshake_resp(self, host, key):
+        header = {
+                  'Connection': 'Upgrade',
+                  'Upgrade': 'websocket',
+                  'Sec-WebSocket-Accept': key,
+                  'Sec-WebSocket-Protocol': 'chat',
+                  'Sec-WebSocket-location': 'ws://{}'.format(host)
+                 }
+        headers = ['{}: {}'.format(k, item) for k, item in header.items()]
+        headers.insert(0, 'HTTP/1.1 101 Switching Protocols')
+        headers.append('\r\n')
+        resp =  '\r\n'.join(headers)
+        print ('handshake resp send=======\n', resp)
+        print ('handshake resp send=======end\n')
+ 
+        data = resp.encode()
+        return data 
+
 
 class Pingpong:
     def encode_ping(self):
