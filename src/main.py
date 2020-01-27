@@ -5,12 +5,17 @@ import time
 import sys
 import _thread as thread
 
+OPCODE_TEXT = 0x1
+OPCODE_PING = 0x9
+OPCODE_PONG = 0xA
+
 class WebSocketServer:
     def __init__(self, on_open=None, on_msg=None):
         print ('WS server started')
         self.ws = None
         self.on_open = on_open
         self.on_msg = on_msg
+        self.CALLBACKS = { 0x1: self.on_msg }
 
     def run_forever(self):
         server = Sock.create_server(('127.0.0.1', 9001))
@@ -30,8 +35,9 @@ class WebSocketServer:
     def read(self):
         #1
         print ('read on server')
-        msg = self.ws.read_frame()
-        self._callback(self.on_msg, msg)
+        msg, opcode = self.ws.read_frame()
+        #self._callback(self.on_msg, msg)
+        self._callback(self.CALLBACKS[opcode], msg)
         #2 ping or pong
 
     def _callback(self, callback, *args):
@@ -106,7 +112,9 @@ class WebSocketChannel:
     def __init__(self, sock):
         self.sock = sock    
         print ('WebSocketChannel init')
-    
+   
+
+ 
     def write_frame(self, data):
         print ('write frame in channel')
         dd = FrameStream.encode_frame(1, data) 
@@ -137,7 +145,7 @@ class WebSocketChannel:
         
         str = data.decode()
         print ('==read on WebSocketChannel', str)
-        return str 
+        return str, opcode 
 
     def request_handshake(self):
         print ('request handshake begin')
@@ -156,9 +164,16 @@ class WebSocketChannel:
         print ('reponse handshake end')
     
     def request_ping(self):
-        pass
+        print ('write ping frame in channel')
+        dd = FrameStream.encode_frame(OPCODE_PING, data="" )
+        print ('write bytes:', dd)
+        self.sock.send(dd)
+
     def response_pong(self):
-        pass
+        print ('write pong frame in channel')
+        dd = FrameStream.encode_frame(OPCODE_PONG, data="" )
+        print ('write bytes:', dd)
+        self.sock.send(dd)
 
 import os
 import struct
