@@ -145,6 +145,9 @@ class WebSocketChannel:
     def read_frame(self):
         #Sock.recv_bytes(self.sock, 2)
         first2bytes = self.sock.recv(2)
+        if not first2bytes:
+            print("null")
+            return "",1
         print('first 2 bytes:{}, len={}'.format(first2bytes, len(first2bytes)))
         fin, opcode = FrameStream.decode_frame0(first2bytes[0])
         mask, init_payloadlen = FrameStream.decode_frame1(first2bytes[1])
@@ -322,7 +325,7 @@ class HandShake:
     def encode_handshake_req(self, host, port, resource):
         bytes_key = bytes(random.getrandbits(8) for _ in range(16))
         key = base64.b64encode(bytes_key).decode()
-        header = {'host': '{}:{}'.format(host, port),
+        header = {'Host': '{}:{}'.format(host, port),
                   'Connection': 'Upgrade',
                   'Upgrade': 'websocket',
                   'User-Agent': 'Python3.7',
@@ -376,7 +379,7 @@ class HandShake:
         print('header[0] recv', header, header_list)
         print('h dict', h_dict)
 
-        host = h_dict['host'] 
+        host = h_dict['Host'] 
         key = h_dict['Sec-WebSocket-Key'] 
         accept_key = ws_accept_key(key)
         return host, accept_key
