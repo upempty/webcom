@@ -56,7 +56,8 @@ class WebSocketServer:
 from urllib.parse import urlsplit as urlsplit
 
 class WebSocketClient:
-    def __init__(self, url="ws://localhost:9001/ws",  on_open=None, on_msg=None, on_ping=None, on_pong=None):
+    def __init__(self, url="ws://localhost:9001/ws",  on_open=None, on_msg=None, 
+                       on_ping=None, on_pong=None):
         print ('WS client started')
         self.on_open = on_open
         self.on_msg = on_msg
@@ -256,11 +257,13 @@ x1,x2,... = struct.unpack(fmt, bytes)
         elif length < LENGTH_16:
             header_index = 0
             mask_payload_len = (0x1<<7) | LENGTH_7 
-            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, mask_payload_len, length)
+            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, 
+                                  mask_payload_len, length)
         else:
             header_index = 1
             mask_payload_len = (0x1<<7) | (LENGTH_7+1)
-            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, mask_payload_len, length)
+            header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, 
+                                  mask_payload_len, length)
         mask = os.urandom(4) 
         #mask_data = self._make_masked(mask, data.encode("utf-8"))
         print ("JJJJJJJJJJJJJJJJJJ", data)
@@ -284,7 +287,8 @@ x1,x2,... = struct.unpack(fmt, bytes)
 
     @classmethod
     def decode_frame2(self, baselen, maskkey_data): 
-        #based on initpayload <0x7E, 0x7E, 0x7F after read_bytes(4); read_bytes(2+4);read_bytes(4+8);read_bytes(dlen)
+        #based on initpayload <0x7E, 0x7E, 0x7F 
+        #after read_bytes(4); read_bytes(2+4);read_bytes(4+8);read_bytes(dlen)
         mask_key = maskkey_data[:4] 
         raw_data = maskkey_data[4:]
         maskkey_data_d = self._make_masked(mask_key, raw_data)
