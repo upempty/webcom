@@ -10,23 +10,25 @@ OPCODE_PING = 0x9
 OPCODE_PONG = 0xA
 
 class WebSocketServer:
-    def __init__(self, on_open=None, on_msg=None, on_ping=None, on_pong=None):
+    def __init__(self, port=9001, on_open=None, on_msg=None, on_ping=None, on_pong=None):
         print ('WS server started')
         self.ws = None
+        self.port = port
+
         self.on_open = on_open
         self.on_msg = on_msg
         self.on_ping = on_ping
         self.on_pong = on_pong
-
+        
     def run_forever(self):
         self.CALLBACKS = { OPCODE_TEXT: self.on_msg,
                            OPCODE_PING: self.on_ping,
                            OPCODE_PONG: self.on_pong }
 
-        server = Sock.create_server(('127.0.0.1', 9001))
+        server = Sock.create_server(('', self.port))
         conn = Sock.server_accept(server)
         self.ws = WebSocketChannel(conn)
-        self.ws.response_handshake()
+        self.ws.response_handshake(host="127.0.0.1:{}".format(self.port))
         self._callback(self.on_open) #use for on_xx(msg, ping)
         while True:
             time.sleep(2)
@@ -50,25 +52,34 @@ class WebSocketServer:
         print ('callback defination on server', args)
         if callback:
             callback(self, *args)
-            print('!!!!!!!!!!!', args)
+
+from urllib.parse import urlsplit as urlsplit
 
 class WebSocketClient:
-    def __init__(self, on_open=None, on_msg=None, on_ping=None, on_pong=None):
+    def __init__(self, url="ws://localhost:9001/ws",  on_open=None, on_msg=None, on_ping=None, on_pong=None):
         print ('WS client started')
         self.on_open = on_open
         self.on_msg = on_msg
         self.on_ping = on_ping
         self.on_pong = on_pong
-
+        self.url = url
+        self.parse_connection()
+    
+    def parse_connection(self):
+        ret = urlsplit(self.url)       
+        self.addr = (ret.hostname, ret.port)
+        print ("URL=", self.url, ", addr=", self.addr)
+        self.resource = ret.path
+            
     def run_forever(self):
         self.CALLBACKS = { OPCODE_TEXT: self.on_msg,
                            OPCODE_PING: self.on_ping,
                            OPCODE_PONG: self.on_pong }
 
-        addr = ('127.0.0.1', 9001)
-        conn = Sock.create_connect(addr)
+        #addr = ('127.0.0.1', 9001)
+        conn = Sock.create_connect(self.addr)
         self.ws = WebSocketChannel(conn)
-        self.ws.request_handshake()
+        self.ws.request_handshake(self.addr[0], self.addr[1])
         self._callback(self.on_open) #use for on_xx(msg, ping)
         while True:
             time.sleep(2)
@@ -93,7 +104,6 @@ class WebSocketClient:
         print ('callback defination on client', args)
         if callback:
             callback(self, *args)
-            print('!!!!!!!!!!!', args)
 
 import socket
 
@@ -105,8 +115,6 @@ class Sock:
         so.bind(addr)
         so.listen(5)
         return so
-        
-        
 
     @classmethod
     def server_accept(self, server):
@@ -126,8 +134,6 @@ class WebSocketChannel:
     def __init__(self, sock):
         self.sock = sock    
         print ('WebSocketChannel init')
-   
-
  
     def write_frame(self, data, opcode=OPCODE_TEXT):
         print ('write frame in channel')
@@ -161,22 +167,22 @@ class WebSocketChannel:
         print ('==read on WebSocketChannel', str)
         return str, opcode 
 
-    def request_handshake(self):
+    def request_handshake(self, host="127.0.0.1", port=9001):
         print ('request handshake begin')
-        data = HandShake.encode_handshake_req(host='127.0.0.1', port='9001', resource='chat')
+        data = HandShake.encode_handshake_req(host, port, resource='chat')
         self.sock.send(data)
         data_recv =self.sock.recv(1024)
         ret = HandShake.decode_handshake_resp(data_recv)
         print ('request handshake end')
 
-    def response_handshake(self):
+    def response_handshake(self, host):
         print ('reponse handshake begin')
         data =self.sock.recv(1024)
         host, accept_key = HandShake.decode_handshake_req(data)
-        data_send = HandShake.encode_handshake_resp('127.0.0.1:9001', accept_key)
+        data_send = HandShake.encode_handshake_resp(host, accept_key)
         self.sock.send(data_send)
         print ('reponse handshake end')
-    
+    """ 
     def request_ping(self, data=""):
         print ('write ping frame in channel')
         dd = FrameStream.encode_frame(OPCODE_PING, data)
@@ -188,6 +194,7 @@ class WebSocketChannel:
         dd = FrameStream.encode_frame(OPCODE_PONG, data)
         print ('write bytes:', dd)
         self.sock.send(dd)
+    """
 
 import os
 import struct
@@ -389,17 +396,6 @@ class HandShake:
         data = resp.encode()
         return data 
 
-
-class Pingpong:
-    def encode_ping(self):
-        pass
-    def decode_pong(self):
-        pass
-
-    def decode_ping(self):
-        pass
-    def encode_pong(self):
-        pass
 
 import json
 AA = json.dumps({1: 'a', 2: 'b'})
