@@ -49,7 +49,6 @@ class WebSocketServer:
     def _callback(self, callback, *args):
         print ('callback defination on server', args)
         if callback:
-            print('!!!!!!!!!!!', args)
             callback(self, *args)
             print('!!!!!!!!!!!', args)
 
@@ -93,7 +92,6 @@ class WebSocketClient:
     def _callback(self, callback, *args):
         print ('callback defination on client', args)
         if callback:
-            print('!!!!!!!!!!!', args)
             callback(self, *args)
             print('!!!!!!!!!!!', args)
 
@@ -417,6 +415,17 @@ def on_open(ws):
             print (AA)
     thread.start_new_thread(run, ())
 
+def on_open_c(ws):
+    print ('on open init message')
+    def run(*args):
+        while True:
+            time.sleep(2)
+            print ('thread run inside on_open!!!!!!send')
+            ws.write(AA)
+            print (AA)
+    thread.start_new_thread(run, ())
+
+
 def on_msg(ws, *args):
     print ('on message!!!!')
 
@@ -445,7 +454,11 @@ if __name__=='__main__':
     print('main entry:主入口')
     #wserver = WebSocketClient()
     ws = daemon_role.get(id, WebSocketClient)()
-    ws.on_open = on_open
+    if id == 2: # server send ping to client.
+        ws.on_open = on_open
+    else: 
+        ws.on_open = on_open_c
+
     ws.on_msg = on_msg
     ws.on_ping = on_ping
     ws.on_pong = on_pong
