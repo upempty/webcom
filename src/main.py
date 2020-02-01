@@ -299,23 +299,7 @@ x1,x2,... = struct.unpack(fmt, bytes)
         return mask_key, data
         #return (mask_key, data)
 
-    #all variable to store local data not global.    
-    """
-    @classmethod 
-    def decode_frame(self):
-        #sock.recv(1024) to buffer
-        #data from buffer
-        #a=bytearray()a.append(byte)
-        raw_data = b""
-        raw_data += data
-        data[0] fin opcode;
-        data[1] maks payload len
-        if payloadlen<0x7E: ==0x7E: ==7F:
-            lengthoffset=1:2; 2:4; 2:10
-            makskeyoffset=2:6; 4:8; 10:14
-            dataoffset=6:x+6; 8:x+8; 14:x+10
-        pass
-    """
+
 import random
 import base64
 import hashlib
