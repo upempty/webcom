@@ -1,0 +1,171 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Document</title>
+
+    <style>
+
+ 
+
+#mess{text-align: left;margin-left:20px;}
+
+ 
+
+</style>
+
+ 
+
+</head>
+
+ 
+
+<body>
+
+ 
+
+<input id="t1" size="20" style="height:50px;font-size:30px;align:center;"  type=text value="ls" onkeydown="KeyDown();"/> 
+
+ 
+
+<input type=button value="runShell" style="height:30px;font-size:30px"   onclick="aa();">
+
+ 
+
+<div  id="mess"></div>
+
+ 
+
+    <script>
+
+ 
+
+        var mess = document.getElementById("mess");
+
+            var ws = new WebSocket('ws://127.0.0.1:9001');
+
+            ws.onopen = function(e){
+
+                console.log("连接服务器成功");
+
+                ws.send("echo");
+
+ 
+
+            }
+
+ 
+
+            ws.onclose = function(e){
+
+      alert(e.code+"close");
+
+                console.log("服务器关闭");
+
+ 
+
+            }
+
+            ws.onerror = function(e){
+
+                console.log("连接出错");
+
+ 
+
+            }
+
+ 
+
+            ws.onmessage = function(e){
+
+  var s=e.data.replace(/(\r\n)|(\n)/g,'<br>');
+
+ 
+
+mess.innerHTML=(s+"<br>"+mess.innerHTML);
+
+                
+
+            }
+
+ 
+
+ 
+
+function aa(){
+
+ 
+
+var t = document.getElementById("t1");
+
+ 
+
+console.log(t.value);
+
+ 
+
+ws.send(t.value,"ff");
+
+ 
+
+ 
+
+ 
+
+}
+
+ 
+
+ 
+
+ 
+
+function KeyDown()
+
+ 
+
+{
+
+ 
+
+  if (event.keyCode == 13)
+
+ 
+
+  {
+
+ 
+
+    event.returnValue=false;
+
+ 
+
+    event.cancel = true;
+
+ 
+
+    aa();
+
+ 
+
+  }
+
+ 
+
+}
+
+ 
+
+    </script>
+
+ 
+
+</body>
+
+ 
+
+</html>

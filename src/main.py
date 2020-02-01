@@ -43,7 +43,7 @@ class WebSocketServer:
         #1
         print ('read on server')
         msg, opcode = self.ws.read_frame()
-        print ("MMMMMM", msg, opcode, self.CALLBACKS[opcode])
+        print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         #self._callback(self.on_msg, msg)
         self._callback(self.CALLBACKS[opcode], msg)
         #2 ping or pong
@@ -370,6 +370,7 @@ class HandShake:
 
     @classmethod
     def encode_handshake_resp(self, host, key):
+        """
         header = {
                   'Connection': 'Upgrade',
                   'Upgrade': 'websocket',
@@ -377,6 +378,17 @@ class HandShake:
                   'Sec-WebSocket-Protocol': 'chat',
                   'Sec-WebSocket-location': 'ws://{}'.format(host)
                  }
+
+        """
+        # if client sends Sec-WebSocket-Protocol, then response with protocol needed, or not needed.
+        header = {
+                  'Connection': 'Upgrade',
+                  'Upgrade': 'websocket',
+                  'Sec-WebSocket-Accept': key,
+                  'Sec-WebSocket-location': 'ws://{}'.format(host)
+                 }
+
+
         headers = ['{}: {}'.format(k, item) for k, item in header.items()]
         headers.insert(0, 'HTTP/1.1 101 Switching Protocols')
         headers.append('\r\n')
@@ -398,7 +410,7 @@ def on_open(ws):
         while True:
             time.sleep(2)
             print ('thread run inside on_open!!!!!!send')
-            ws.write(AA, OPCODE_PING)
+            #ws.write(AA, OPCODE_PING)
             print (AA)
     thread.start_new_thread(run, ())
 
@@ -414,7 +426,7 @@ def on_open_c(ws):
 
 
 def on_msg(ws, *args):
-    print ('on message!!!!')
+    print ('on message!!!!:========: ',*args)
 
 def on_ping(ws, *args):
     print ('on ping!!!!!!!!!!!!!!!!!!!!!!!!!')
