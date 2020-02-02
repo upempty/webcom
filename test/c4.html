@@ -52,7 +52,7 @@
 
                 console.log("连接服务器成功");
 
-                ws.send("echo");
+                //ws.send("echo");
 
  
 
@@ -83,6 +83,8 @@
             ws.onmessage = function(e){
 
   var s=e.data.replace(/(\r\n)|(\n)/g,'<br>');
+  alert(s)
+  //var s=e.data;
 
  
 

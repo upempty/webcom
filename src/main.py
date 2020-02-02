@@ -37,7 +37,7 @@ class WebSocketServer:
 
     def write(self, data, opcode=OPCODE_TEXT):
         print ('==write:', data)
-        self.ws.write_frame(data, opcode)
+        self.ws.write_frame_s(data, opcode)
 
     def read(self):
         #1
@@ -91,7 +91,7 @@ class WebSocketClient:
 
     def write(self, data, opcode=OPCODE_TEXT):
         print ('==write:', data)
-        self.ws.write_frame(data, opcode)
+        self.ws.write_frame_c(data, opcode)
 
     def read(self):
         #1
@@ -113,6 +113,7 @@ class Sock:
     def create_server(self, addr):
         print ('create server:{})'.format(addr))
         so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        so.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         so.bind(addr)
         so.listen(5)
         return so
@@ -136,11 +137,18 @@ class WebSocketChannel:
         self.sock = sock    
         print ('WebSocketChannel init')
  
-    def write_frame(self, data, opcode=OPCODE_TEXT):
+    def write_frame_s(self, data, opcode=OPCODE_TEXT):
         print ('write frame in channel')
-        dd = FrameStream.encode_frame(opcode, data) 
+        dd = FrameStream.encode_frame(opcode, data, mask=0) 
         print ('write bytes:', dd)
         self.sock.send(dd)
+ 
+    def write_frame_c(self, data, opcode=OPCODE_TEXT):
+        print ('write frame in channel')
+        dd = FrameStream.encode_frame(opcode, data, mask=1) 
+        print ('write bytes:', dd)
+        self.sock.send(dd)
+
 
     def read_frame(self):
         #Sock.recv_bytes(self.sock, 2)
@@ -155,17 +163,17 @@ class WebSocketChannel:
         if init_payloadlen < LENGTH_7:
             maskkey_data = self.sock.recv(init_payloadlen+4)
             print ("LEN compare", len(maskkey_data), init_payloadlen+4) 
-            maskkey, data = FrameStream.decode_frame2(init_payloadlen, maskkey_data)
-        elif baselen == LENGTH_7:
+            maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
+        elif init_payloadlen == LENGTH_7:
             datalen = self.sock.recv(2)
             data_len = struct.unpack('>H', datalen)[0]
             maskkey_data = self.sock.recv(data_len+4)
-            maskkey, data = FrameStream.decode_frame2(init_payloadlen, maskkey_data)
-        elif baselen > LENGTH_7:
+            maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
+        elif init_payloadlen > LENGTH_7:
             datalen = self.sock.recv(8)
             data_len = struct.unpack('>Q', datalen)[0]
             maskkey_data = self.sock.recv(data_len+4)
-            maskkey, data = FrameStream.decode_frame2(init_payloadlen, maskkey_data)
+            maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
         
         str = data.decode()
         print ('==read on WebSocketChannel', str)
@@ -186,19 +194,6 @@ class WebSocketChannel:
         data_send = HandShake.encode_handshake_resp(host, accept_key)
         self.sock.send(data_send)
         print ('reponse handshake end')
-    """ 
-    def request_ping(self, data=""):
-        print ('write ping frame in channel')
-        dd = FrameStream.encode_frame(OPCODE_PING, data)
-        print ('write bytes:', dd)
-        self.sock.send(dd)
-
-    def response_pong(self, data=""):
-        print ('write pong frame in channel')
-        dd = FrameStream.encode_frame(OPCODE_PONG, data)
-        print ('write bytes:', dd)
-        self.sock.send(dd)
-    """
 
 import os
 import struct
@@ -250,27 +245,31 @@ x1,x2,... = struct.unpack(fmt, bytes)
         return d
     
     @classmethod
-    def encode_frame(self, opcode, data):
+    def encode_frame(self, opcode, data, mask=0x1):
         fin_opcode = (0x1<<7) | opcode
         length = len(data)
         if length < LENGTH_7:
             header_index = -1
-            mask_payload_len = (0x1<<7) | length
+            #mask_payload_len = (0x1<<7) | length
+            mask_payload_len = (mask<<7) | length
             header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, mask_payload_len)
         elif length < LENGTH_16:
             header_index = 0
-            mask_payload_len = (0x1<<7) | LENGTH_7 
+            mask_payload_len = (mask<<7) | LENGTH_7 
             header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, 
                                   mask_payload_len, length)
         else:
             header_index = 1
-            mask_payload_len = (0x1<<7) | (LENGTH_7+1)
+            mask_payload_len = (mask<<7) | (LENGTH_7+1)
             header1 = struct.pack(''.join(HeaderType[header_index]), fin_opcode, 
                                   mask_payload_len, length)
-        mask = os.urandom(4) 
-        #mask_data = self._make_masked(mask, data.encode("utf-8"))
-        print ("JJJJJJJJJJJJJJJJJJ", data)
-        mask_data = self._make_masked(mask, six.b(data))
+        if mask == 1:
+            maskkey = os.urandom(4) 
+            #mask_data = self._make_masked(maskkey, data.encode("utf-8"))
+            mask_data = self._make_masked(maskkey, six.b(data))
+        else:
+            mask_data = six.b(data)
+        print ("==encode frame mask:{}, data:{}==".format(mask, data))
         m = header1 + mask_data
         return m
     
@@ -289,13 +288,17 @@ x1,x2,... = struct.unpack(fmt, bytes)
         return mask, init_payload_len
 
     @classmethod
-    def decode_frame2(self, baselen, maskkey_data): 
+    def decode_frame2(self, mask, maskkey_data): 
         #based on initpayload <0x7E, 0x7E, 0x7F 
         #after read_bytes(4); read_bytes(2+4);read_bytes(4+8);read_bytes(dlen)
-        mask_key = maskkey_data[:4] 
-        raw_data = maskkey_data[4:]
-        maskkey_data_d = self._make_masked(mask_key, raw_data)
-        data = maskkey_data_d[4:]
+        mask_key = b''
+        if mask == 1:
+            mask_key = maskkey_data[:4] 
+            raw_data = maskkey_data[4:]
+            maskkey_data_d = self._make_masked(mask_key, raw_data)
+            data = maskkey_data_d[4:]
+        else:
+            data = maskkey_data
         return mask_key, data
         #return (mask_key, data)
 
@@ -426,7 +429,9 @@ def on_open_c(ws):
 
 
 def on_msg(ws, *args):
-    print ('on message!!!!:========: ',*args)
+    print ('on message *args!!!!:========: ',*args)
+    print ('on message  args!!!!:========: ',args)
+    ws.write(*args)
 
 def on_ping(ws, *args):
     print ('on ping!!!!!!!!!!!!!!!!!!!!!!!!!')
