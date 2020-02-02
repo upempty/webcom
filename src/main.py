@@ -428,16 +428,33 @@ def on_open_c(ws):
     thread.start_new_thread(run, ())
 
 
+from os import path
+from jinja2 import Environment, FileSystemLoader
+
+
+project_path = path.abspath(path.join(path.dirname(__file__), '..'))
+templates_path = '{}/templates'.format(project_path)
+print ('templates_path=', templates_path)
+loader = FileSystemLoader(templates_path)
+env = Environment(loader=loader)
+
+def render_template(template, **kwargs):
+    temp = env.get_template(template)
+    return temp.render(**kwargs)
+
 def on_msg(ws, *args):
-    print ('on message *args!!!!:========: ',*args)
-    print ('on message  args!!!!:========: ',args)
+    print ('on message *args!!!!:========: ', *args)
+    print ('on message  args!!!!:========: ', args)
     ws.write(*args)
+    flask_data = "Hello Websocket via render_template"
+    rend = render_template('index.html', flask_data=flask_data)
+    print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$', rend)
+    ws.write(rend)
 
 def on_ping(ws, *args):
     print ('on ping!!!!!!!!!!!!!!!!!!!!!!!!!')
     ws.write(*args, OPCODE_PONG)
     print ('send pong!!!!!!!!!!!!!!!!!!!!!!!!!')
-
 
 def on_pong(ws, *args):
     print ('on pong!!!!!!!!!!!!!!!!!!!!!!!!!')
