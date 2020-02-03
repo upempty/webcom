@@ -160,19 +160,31 @@ class WebSocketChannel:
         fin, opcode = FrameStream.decode_frame0(first2bytes[0])
         mask, init_payloadlen = FrameStream.decode_frame1(first2bytes[1])
         data = b""
+        maskkey_data = b""
         if init_payloadlen < LENGTH_7:
-            maskkey_data = self.sock.recv(init_payloadlen+4)
-            print ("LEN compare", len(maskkey_data), init_payloadlen+4) 
+            if mask == 1:
+                maskkey_data = self.sock.recv(init_payloadlen+4)
+                print ("LEN compare with mask", len(maskkey_data), init_payloadlen+4) 
+            else:
+                maskkey_data = self.sock.recv(init_payloadlen)
+                print ("LEN compare no mask", len(maskkey_data), init_payloadlen) 
             maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
+            print('==maskkey:{}; data={}'.format(maskkey, data))
         elif init_payloadlen == LENGTH_7:
             datalen = self.sock.recv(2)
             data_len = struct.unpack('>H', datalen)[0]
-            maskkey_data = self.sock.recv(data_len+4)
+            if mask == 1:
+                maskkey_data = self.sock.recv(data_len+4)
+            else:
+                maskkey_data = self.sock.recv(data_len)
             maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
         elif init_payloadlen > LENGTH_7:
             datalen = self.sock.recv(8)
-            data_len = struct.unpack('>Q', datalen)[0]
-            maskkey_data = self.sock.recv(data_len+4)
+            data_len = struct.unpack('>Q', data_len)[0]
+            if mask == 1:
+                maskkey_data = self.sock.recv(data_len+4)
+            else:
+                maskkey_data = self.sock.recv(data_len)
             maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
         
         str = data.decode()
@@ -413,7 +425,7 @@ def on_open(ws):
         while True:
             time.sleep(2)
             print ('thread run inside on_open!!!!!!send')
-            #ws.write(AA, OPCODE_PING)
+            ws.write(AA, OPCODE_PING)
             print (AA)
     thread.start_new_thread(run, ())
 
@@ -446,7 +458,7 @@ def on_msg(ws, *args):
     print ('on message *args!!!!:========: ', *args)
     print ('on message  args!!!!:========: ', args)
     ws.write(*args)
-    flask_data = "Hello Websocket via render_template"
+    flask_data = "WS cannot long"
     rend = render_template('index.html', flask_data=flask_data)
     print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$', rend)
     ws.write(rend)
