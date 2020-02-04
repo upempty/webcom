@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<body>
+<h1>{{ flask_data }}</h1>
 <span class="content">{{ flask_data }}</span>
 <table border="1">
   <tr>
@@ -9,4 +17,6 @@
     <td>$2020</td>
   </tr>
 </table> 
-<img src="https://github.com/upempty/network/blob/master/figure/2.PNG" width="300" height="120"/>
+
+</body>
+</html>
