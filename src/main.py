@@ -457,11 +457,21 @@ def render_template(template, **kwargs):
 def on_msg(ws, *args):
     print ('on message *args!!!!:========: ', *args)
     print ('on message  args!!!!:========: ', args)
-    ws.write(*args)
+    #ws.write(*args)
+    
+    #append image to html: option1: render html file; option2: html text directly in code;
+    """
     flask_data = "WS cannot long"
     rend = render_template('block.html', flask_data=flask_data)
     print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$', rend)
     ws.write(rend)
+    """
+    img1 = "client1.jpg"
+    block = """<span class="content">block2</span>
+               <img src="{}" alt="client1" width="400", height="341" title="client fei">
+            """.format(img1)
+    ws.write(block)
+
 
 def on_ping(ws, *args):
     print ('on ping!!!!!!!!!!!!!!!!!!!!!!!!!')
