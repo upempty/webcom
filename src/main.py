@@ -459,7 +459,7 @@ def on_msg(ws, *args):
     print ('on message  args!!!!:========: ', args)
     ws.write(*args)
     flask_data = "WS cannot long"
-    rend = render_template('index.html', flask_data=flask_data)
+    rend = render_template('block.html', flask_data=flask_data)
     print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$', rend)
     ws.write(rend)
 

@@ -1,0 +1,68 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Document</title>
+
+    <style>
+
+     #mess{text-align: left;margin-left:20px;}
+    </style>
+</head>
+
+<body>
+
+<input id="t1" size="20" style="height:50px;font-size:30px;align:center;"  type=text value="ls" /> 
+
+<input type=button value="run" style="height:30px;font-size:30px"   onclick="send_command();" />
+
+<img src="index.jpg" alt="index" width="400", height="341" title="fei"/> 
+
+<div  id="mess"></div>
+
+    <script>
+
+        var mess = document.getElementById("mess");
+
+            var ws = new WebSocket('ws://127.0.0.1:9001');
+
+            ws.onopen = function(e){
+
+                console.log("连接服务器成功");
+
+                //ws.send("echo");
+
+            }
+
+            ws.onclose = function(e){
+
+                alert(e.code+"close");
+
+                console.log("服务器关闭");
+
+            }
+
+            ws.onerror = function(e){
+
+                console.log("连接出错");
+            }
+
+            ws.onmessage = function(e){
+                var s=e.data.replace(/(\r\n)|(\n)/g,'<br>');
+                alert(s)
+                mess.innerHTML=(s+"<br>"+mess.innerHTML);
+            }
+
+            function send_command() {
+                var t = document.getElementById("t1");
+                console.log(t.value);
+                ws.send(t.value);
+            }
+            
+</script>
+</body>
+</html>
