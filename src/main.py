@@ -4,6 +4,7 @@
 import time
 import sys
 import _thread as thread
+import select
 
 OPCODE_TEXT = 0x1
 OPCODE_PING = 0x9
@@ -19,8 +20,67 @@ class WebSocketServer:
         self.on_msg = on_msg
         self.on_ping = on_ping
         self.on_pong = on_pong
-        
+
+
+        self.wss = []        
+        self.read_socks = []
+        self.conn_socks = []
+
+    def server_run_forever(self):
+
+        self.CALLBACKS = { OPCODE_TEXT: self.on_msg,
+                           OPCODE_PING: self.on_ping,
+                           OPCODE_PONG: self.on_pong }
+
+        server = Sock.create_server(('', self.port))
+        self.read_socks = [server]
+        first_handshakes = []
+        while True:
+            readable, writable, exceptional = select.select(self.read_socks, [], [], 1)        
+            for s in readable:
+                if s is server:
+                    conn = Sock.server_accept(server)
+                    print('accepted conn:', conn)
+                    conn.setblocking(0)
+                    self.read_socks.append(conn)
+                    self.conn_socks.append(conn)
+                    ws = WebSocketChannel(conn)
+                    self.wss.append(ws)
+                    first_handshakes.append(True)
+                else:
+                    print('read conn:', s)
+                    id = self.conn_socks.index(s)
+                    if first_handshakes[id]: 
+                        first_handshakes[id] = False
+                        self.wss[id].response_handshake(host="127.0.0.1:{}".format(self.port))
+                        self._callback2(self.on_open, self.wss[id]) #use for on_xx(msg, ping)
+                        print('read ws handling1')
+                    else:
+                        self.read2(self.wss[id])
+                        print('read ws handling11')
+            time.sleep(2)
+            print('server callback handling')
+
+    def write2(self, ws, data, opcode=OPCODE_TEXT):
+        print ('==write:', data)
+        ws.write_frame_s(data, opcode)
+
+    def read2(self, ws):
+        #1
+        print ('read on server')
+        msg, opcode = ws.read_frame()
+        print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
+        self._callback2(self.CALLBACKS[opcode], ws, msg)
+
+    def _callback2(self, callback, ws, *args):
+        print ('callback defination on server', args)
+        if callback:
+            callback(ws, *args)
+
+
+ 
     def run_forever(self):
+
         self.CALLBACKS = { OPCODE_TEXT: self.on_msg,
                            OPCODE_PING: self.on_ping,
                            OPCODE_PONG: self.on_pong }
@@ -137,6 +197,19 @@ class WebSocketChannel:
         self.sock = sock    
         print ('WebSocketChannel init')
  
+    def write(self, data, opcode=OPCODE_TEXT):
+        print ('==write:', data)
+        self.write_frame_s(data, opcode)
+
+    def read(self):
+        #1
+        print ('read on server')
+        msg, opcode = self.read_frame()
+        print("rrread", msg)
+        #print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
+        #self._callback2(self.CALLBACKS[opcode], ws, msg)
+
+
     def write_frame_s(self, data, opcode=OPCODE_TEXT):
         print ('write frame in channel')
         dd = FrameStream.encode_frame(opcode, data, mask=0) 
@@ -505,5 +578,6 @@ if __name__=='__main__':
     ws.on_msg = on_msg
     ws.on_ping = on_ping
     ws.on_pong = on_pong
-    ws.run_forever()
+    #ws.run_forever()
+    ws.server_run_forever()
 
