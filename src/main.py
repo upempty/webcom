@@ -44,23 +44,33 @@ class WebSocketServer:
                     conn.setblocking(0)
                     self.read_socks.append(conn)
                     self.conn_socks.append(conn)
-                    ws = WebSocketChannel(conn)
-                    self.wss.append(ws)
                     first_handshakes.append(True)
                 else:
                     print('read conn:', s)
                     id = self.conn_socks.index(s)
                     if first_handshakes[id]: 
                         first_handshakes[id] = False
-                        self.wss[id].response_handshake(host="127.0.0.1:{}".format(self.port))
+                        ws = WebSocketChannel(s)
+                        print ("idid ", id)
+                        ws.response_handshake(host="127.0.0.1:{}".format(self.port))
+                        self.wss.append(ws)
                         self._callback2(self.on_open, self.wss[id]) #use for on_xx(msg, ping)
                         print('read ws handling1')
                     else:
                         self.read2(self.wss[id])
                         print('read ws handling11')
+                        
             time.sleep(2)
             print('server callback handling')
-
+    
+    def multicast(self, except_ws,  msg):
+        for w in self.wss:
+            if w is except_ws:
+                print("!!!!!!!!!!!!!!!!ooooooooown-own----------!!!!!!!!!!!!=======")
+                continue
+            w.write_frame_s(msg, opcode=OPCODE_TEXT)
+            print ('broadcast!!!!!')
+        
     def write2(self, ws, data, opcode=OPCODE_TEXT):
         print ('==write:', data)
         ws.write_frame_s(data, opcode)
@@ -71,6 +81,7 @@ class WebSocketServer:
         msg, opcode = ws.read_frame()
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback2(self.CALLBACKS[opcode], ws, msg)
+        self.multicast(ws, msg)
 
     def _callback2(self, callback, ws, *args):
         print ('callback defination on server', args)
