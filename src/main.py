@@ -80,7 +80,7 @@ class WebSocketServer:
         msg, opcode = ws.recv()
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback(self.CALLBACKS[opcode], ws, msg)
-        self.multicast(ws, msg)
+        #self.multicast(ws, msg)
 
     def _callback(self, callback, ws, *args):
         print ('callback defination on server', args)
@@ -503,6 +503,7 @@ AA = json.dumps({1: 'a', 2: 'b'})
 
 def on_open_s(ws):
     print ('on open init message')
+    AA = json.dumps({1: 'ping'})
     def run(*args):
         while True:
             time.sleep(2)
@@ -539,7 +540,7 @@ def render_template(template, **kwargs):
 def on_msg(ws, *args):
     print ('on message *args!!!!:========: ', *args)
     print ('on message  args!!!!:========: ', args)
-    #ws.write(*args)
+    ws.send(*args)
     
     #append image to html: option1: render html file; option2: html text directly in code;
     """

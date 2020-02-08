@@ -68,43 +68,14 @@
             padding:5px 10px;
         }
     </style>
-    <script type="text/javascript">      
-    // 
-        window.onload = function(){
-            var Words = document.getElementById("words");
-            var Who = document.getElementById("who");
-            var TalkWords = document.getElementById("talkwords");
-            var TalkSub = document.getElementById("talksub");
-            
-
-            TalkSub.onclick = function(){
-	            //定义空字符串
-                var str = "";
-                if(TalkWords.value == ""){
-	                 // 消息为空时弹窗
-                    alert("消息不能为空");
-                    return;
-                }
-                if(Who.value == 0){
-	                //如果Who.value为0n那么是 A说
-                    str = '<div class="atalk"><span>A说 :' + TalkWords.value +'</span></div>';
-                }
-                else{
-                    str = '<div class="btalk"><span>B说 :' + TalkWords.value +'</span></div>' ;  
-                }
-                Words.innerHTML = Words.innerHTML + str;
-            }
-            
-        }
-
-
-    </script>
 </head>
+
 <body>
     <div class="talk_con">
         <div class="talk_show" id="words">
             <div class="atalk"><span id="asay">A说：吃饭了吗？</span></div>
             <div class="btalk"><span id="bsay">B说：还没呢，你呢？</span></div>
+<div class="atalk"><span>A say :777777777777</span></div>
         </div>
         <div class="talk_input">
             <select class="whotalk" id="who">
@@ -112,8 +83,58 @@
                 <option value="1">B说：</option>
             </select>
             <input type="text" class="talk_word" id="talkwords">
-            <input type="button" value="发送" class="talk_sub" id="talksub">
+            <input type="button" value="发送" class="talk_sub" id="talksub" onclick="send_msg();" />
         </div>
     </div>
+
+<script type="text/javascript">      
+        var Words = document.getElementById("words");
+
+        var Who = document.getElementById("who");
+        var TalkWords = document.getElementById("talkwords");
+        var TalkSub = document.getElementById("talksub");
+        
+        var ws = new WebSocket('ws://127.0.0.1:9001');
+        alert('ready to echo')
+        ws.onopen = function(e){
+            console.log("连接服务器成功");
+            ws.send("echo");
+        }
+
+        ws.onclose = function(e){
+            alert(e.code+"close");
+            console.log("服务器关闭");
+        }
+
+        ws.onerror = function(e){
+            console.log("连接出错");
+        }
+
+        ws.onmessage = function(e){
+            var s=e.data.replace(/(\r\n)|(\n)/g,'<br>');
+            //mess.innerHTML=(s+"<br>"+mess.innerHTML);
+            //Words.innerHTML = Words.innerHTML + s;
+            Words.innerHTML = Words.innerHTML + e.data;
+        }
+
+        function send_msg() {
+            var str = "";
+            if(TalkWords.value == ""){
+                     // 消息为空时弹窗
+                alert("消息不能为空");
+                return;
+            }
+            if(Who.value == 0){
+                    //如果Who.value为0n那么是 A说
+                str = '<div class="atalk"><span>A say :' + TalkWords.value +'</span></div>';
+            }
+            else{
+                str = '<div class="btalk"><span>B say :' + TalkWords.value +'</span></div>' ;  
+            }
+            ws.send(str);
+        }
+//
+</script>
+
 </body>
 </html>
