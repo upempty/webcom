@@ -78,6 +78,8 @@ class WebSocketServer:
     def handle_recv(self, ws):
         print ('read on server')
         msg, opcode = ws.recv()
+        if not msg:
+            return
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback(self.CALLBACKS[opcode], ws, msg)
         if opcode == OPCODE_TEXT:
@@ -550,11 +552,11 @@ def on_msg(ws, *args):
     print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$', rend)
     ws.write(rend)
     """
-    img1 = "client1.jpg"
-    block = """<span class="content">block2</span>
-               <img src="{}" alt="client1" width="400", height="341" title="client fei">
-            """.format(img1)
-    ws.send(block)
+    #img1 = "client1.jpg"
+    #block = """<span class="content">block2</span>
+    #           <img src="{}" alt="client1" width="400", height="341" title="client fei">
+    #        """.format(img1)
+    #ws.send(block)
 
 
 def on_ping(ws, *args):
