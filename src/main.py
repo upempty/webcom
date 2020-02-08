@@ -80,7 +80,8 @@ class WebSocketServer:
         msg, opcode = ws.recv()
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback(self.CALLBACKS[opcode], ws, msg)
-        #self.multicast(ws, msg)
+        if opcode == OPCODE_TEXT:
+            self.multicast(ws, msg)
 
     def _callback(self, callback, ws, *args):
         print ('callback defination on server', args)
