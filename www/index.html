@@ -73,13 +73,13 @@
 <body>
     <div class="talk_con">
         <div class="talk_show" id="words">
-            <div class="atalk"><span id="asay">A说：吃饭了吗？</span></div>
-            <div class="btalk"><span id="bsay">B说：还没呢，你呢？</span></div>
+            <div class="atalk"><span id="asay">Z : 过年拜年了吗？</span></div>
+            <div class="btalk"><span id="bsay">C : 没呢，因为新冠肺炎NCP，都呆在家呢。</span></div>
         </div>
         <div class="talk_input">
             <select class="whotalk" id="who">
-                <option value="0">A说：</option>
-                <option value="1">B说：</option>
+                <option value="0">A :</option>
+                <option value="1">B :</option>
             </select>
             <input type="text" class="talk_word" id="talkwords">
             <input type="button" value="发送" class="talk_sub" id="talksub" onclick="send_msg();" />
@@ -121,16 +121,14 @@
         function send_msg() {
             var str = "";
             if(TalkWords.value == ""){
-                     // 消息为空时弹窗
                 alert("消息不能为空");
                 return;
             }
             if(Who.value == 0){
-                    //如果Who.value为0n那么是 A说
-                str = '<div class="atalk"><span>A say :' + TalkWords.value +'</span></div>';
+                str = '<div class="atalk"><span>A : ' + TalkWords.value +'</span></div>';
             }
             else{
-                str = '<div class="btalk"><span>B say :' + TalkWords.value +'</span></div>' ;  
+                str = '<div class="btalk"><span>B : ' + TalkWords.value +'</span></div>' ;  
             }
             ws.send(str);
         }
