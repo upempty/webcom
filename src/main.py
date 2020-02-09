@@ -34,7 +34,7 @@ class WebSocketServer:
 
         server = Sock.create_server(('', self.port))
         self.read_socks = [server]
-        first_handshakes = []
+        self.first_handshakes = []
         while True:
             readable, writable, exceptional = select.select(self.read_socks, [], [], 1)        
             for s in readable:
@@ -44,12 +44,12 @@ class WebSocketServer:
                     conn.setblocking(0)
                     self.read_socks.append(conn)
                     self.conn_socks.append(conn)
-                    first_handshakes.append(True)
+                    self.first_handshakes.append(True)
                 else:
-                    print('read conn:', s)
+                    print('read conn-------:', s, 'except:', exceptional)
                     id = self.conn_socks.index(s)
-                    if first_handshakes[id]: 
-                        first_handshakes[id] = False
+                    if self.first_handshakes[id]: 
+                        self.first_handshakes[id] = False
                         ws = WebSocketChannel(s, 1)
                         print ("idid ", id)
                         ws.response_handshake(host="127.0.0.1:{}".format(self.port))
@@ -79,6 +79,12 @@ class WebSocketServer:
         print ('read on server')
         msg, opcode = ws.recv()
         if not msg:
+            print ('sock close----------!!!!!!!!!!!!!!')
+            self.read_socks.remove(ws.sock)
+            self.conn_socks.remove(ws.sock)
+            self.first_handshakes.remove(ws.sock)
+            self.wss.remove(ws)
+            ws.sock.close()
             return
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback(self.CALLBACKS[opcode], ws, msg)
