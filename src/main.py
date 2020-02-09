@@ -343,7 +343,7 @@ x1,x2,... = struct.unpack(fmt, bytes)
     @classmethod
     def encode_frame(self, opcode, data, mask=0x1):
         fin_opcode = (0x1<<7) | opcode
-        #length = len(data)
+        #length = len(data) Note: issue to support chinese, it shall use len of encode of chinese.
         length = len(data.encode())
         if length < LENGTH_7:
             header_index = -1
