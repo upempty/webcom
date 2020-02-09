@@ -295,7 +295,6 @@ class WebSocketChannel:
 import os
 import struct
 import array
-import six
 
 LENGTH_7 = 0x7E
 LENGTH_16 = 0x1<<16
@@ -344,7 +343,8 @@ x1,x2,... = struct.unpack(fmt, bytes)
     @classmethod
     def encode_frame(self, opcode, data, mask=0x1):
         fin_opcode = (0x1<<7) | opcode
-        length = len(data)
+        #length = len(data)
+        length = len(data.encode())
         if length < LENGTH_7:
             header_index = -1
             #mask_payload_len = (0x1<<7) | length
@@ -363,9 +363,9 @@ x1,x2,... = struct.unpack(fmt, bytes)
         if mask == 1:
             maskkey = os.urandom(4) 
             #mask_data = self._make_masked(maskkey, data.encode("utf-8"))
-            mask_data = self._make_masked(maskkey, six.b(data))
+            mask_data = self._make_masked(maskkey, data.encode())
         else:
-            mask_data = six.b(data)
+            mask_data = data.encode()
         print ("==encode frame mask:{}, data:{}==".format(mask, data))
         m = header1 + mask_data
         return m

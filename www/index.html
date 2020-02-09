@@ -93,8 +93,8 @@
         var TalkWords = document.getElementById("talkwords");
         var TalkSub = document.getElementById("talksub");
         
-        //var ws = new WebSocket('ws://127.0.0.1:9001');
-        var ws = new WebSocket('ws://118.31.109.239:9001')
+        var ws = new WebSocket('ws://127.0.0.1:9001');
+        //var ws = new WebSocket('ws://118.31.109.239:9001')
         //alert('ready to echo')
         ws.onopen = function(e){
             console.log("连接服务器成功");
