@@ -6,10 +6,10 @@ import sys
 import _thread as thread
 import select
 
-OPCODE_TEXT = 0x1
+OPCODE_TEXT  = 0x1
 OPCODE_CLOSE = 0x8
-OPCODE_PING = 0x9
-OPCODE_PONG = 0xA
+OPCODE_PING  = 0x9
+OPCODE_PONG  = 0xA
 
 class WebSocketServer:
     def __init__(self, port=9001, on_open=None, on_msg=None, on_ping=None, on_pong=None):
@@ -79,12 +79,14 @@ class WebSocketServer:
         print ('read on server')
         msg, opcode = ws.recv()
         #if not msg:
-        if OPCODE_CLOSE == opcode:
+        if OPCODE_CLOSE == opcode or not msg:
             print ('sock close----------!!!!!!!!!!!!!!')
             print ('IDDDD=', id)
             self.read_socks.remove(ws.sock)
             self.first_handshakes.pop(ws.sock)
             self.wss.pop(ws.sock)
+            ws.send("", OPCODE_CLOSE)
+            print ('sock close----------!!!!!!!!!!!!!!ws.send(slose)')
             ws.sock.close()
             return
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
