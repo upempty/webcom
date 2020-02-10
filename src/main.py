@@ -530,7 +530,8 @@ def on_open_s(ws):
         while True:
             time.sleep(2)
             print ('server open thread run inside on_open!!!!!!send')
-            ws.send(AA, OPCODE_PING)
+            ws.send(AA, OPCODE_PING) 
+            # on open not suitable to send loop as it maybe one closed ws of www
             print (AA)
     thread.start_new_thread(run, ())
 
