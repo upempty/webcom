@@ -7,6 +7,7 @@ import _thread as thread
 import select
 
 OPCODE_TEXT = 0x1
+OPCODE_CLOSE = 0x8
 OPCODE_PING = 0x9
 OPCODE_PONG = 0xA
 
@@ -22,9 +23,8 @@ class WebSocketServer:
         self.on_pong = on_pong
 
 
-        self.wss = []        
+        self.wss = {}       
         self.read_socks = []
-        self.conn_socks = []
 
     def run_forever(self):
 
@@ -34,7 +34,7 @@ class WebSocketServer:
 
         server = Sock.create_server(('', self.port))
         self.read_socks = [server]
-        self.first_handshakes = []
+        self.first_handshakes = {}
         while True:
             readable, writable, exceptional = select.select(self.read_socks, [], [], 1)        
             for s in readable:
@@ -43,28 +43,28 @@ class WebSocketServer:
                     print('accepted conn:', conn)
                     conn.setblocking(0)
                     self.read_socks.append(conn)
-                    self.conn_socks.append(conn)
-                    self.first_handshakes.append(True)
+                    self.first_handshakes[conn] = True
                 else:
                     print('read conn-------:', s, 'except:', exceptional)
-                    id = self.conn_socks.index(s)
-                    if self.first_handshakes[id]: 
-                        self.first_handshakes[id] = False
+                    if self.first_handshakes.get(s) == True: 
+                        self.first_handshakes[s] = False
                         ws = WebSocketChannel(s, 1)
                         print ("idid ", id)
                         ws.response_handshake(host="127.0.0.1:{}".format(self.port))
-                        self.wss.append(ws)
-                        self._callback(self.on_open, self.wss[id]) #use for on_xx(msg, ping)
+                        self.wss[s] = ws
+                        self._callback(self.on_open, self.wss[s]) #use for on_xx(msg, ping)
                         print('read ws handling1')
-                    else:
-                        self.handle_recv(self.wss[id])
+                    elif self.first_handshakes.get(s) == False: 
                         print('read ws handling11')
+                        self.handle_recv(self.wss[s])
+                    else:
+                        print('read ws handling11 no socket')
                         
             time.sleep(2)
             print('server callback handling')
     
     def multicast(self, except_ws,  msg):
-        for w in self.wss:
+        for w in self.wss.values():
             if w is except_ws:
                 print("!!!!!!!!!!!!!!!!ooooooooown-own----------!!!!!!!!!!!!=======")
                 continue
@@ -78,12 +78,13 @@ class WebSocketServer:
     def handle_recv(self, ws):
         print ('read on server')
         msg, opcode = ws.recv()
-        if not msg:
+        #if not msg:
+        if OPCODE_CLOSE == opcode:
             print ('sock close----------!!!!!!!!!!!!!!')
+            print ('IDDDD=', id)
             self.read_socks.remove(ws.sock)
-            self.conn_socks.remove(ws.sock)
-            self.first_handshakes.remove(ws.sock)
-            self.wss.remove(ws)
+            self.first_handshakes.pop(ws.sock)
+            self.wss.pop(ws.sock)
             ws.sock.close()
             return
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
@@ -168,6 +169,11 @@ class WebSocketClient:
             self.handle_recv()
             print('client ready to read done')
             print('client callback handling')
+ 
+    def send(self, data, opcode=OPCODE_TEXT):
+        print ('==client write:', data)
+        self.ws.send(data, opcode)
+
 
     def handle_recv(self):
         #1
@@ -232,7 +238,10 @@ class WebSocketChannel:
         print ('write frame in channel')
         dd = FrameStream.encode_frame(opcode, data, mask=0) 
         print ('write bytes:', dd)
-        self.sock.send(dd)
+        try:
+            self.sock.send(dd)
+        except Exception as e:
+            print ("excep:", e)
  
     def write_frame_c(self, data, opcode=OPCODE_TEXT):
         print ('write frame in channel')
@@ -277,8 +286,11 @@ class WebSocketChannel:
             else:
                 maskkey_data = self.sock.recv(data_len)
             maskkey, data = FrameStream.decode_frame2(mask, maskkey_data)
-        
+        print ('opcode======!!!====', opcode) 
+        if opcode == OPCODE_CLOSE:
+            return None, opcode
         str = data.decode()
+        
         print ('==read on WebSocketChannel', str)
         return str, opcode 
 
@@ -508,6 +520,7 @@ class HandShake:
 
 import json
 AA = json.dumps({1: 'a', 2: 'b'})
+# {"type":"say","to_client_id":to_client_id,"to_client_name":to_client_name,"content":input.value}
 # AA = "" also OK
 
 def on_open_s(ws):

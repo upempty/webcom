@@ -105,6 +105,7 @@
         ws.onclose = function(e){
             alert(e.code+"close");
             console.log("服务器关闭");
+            ws.close();
         }
 
         ws.onerror = function(e){
