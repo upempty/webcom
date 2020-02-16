@@ -75,6 +75,20 @@ class WebSocketServer:
     def send(self, ws, data, opcode=OPCODE_TEXT):
         print ('==write:', data)
         ws.send(data, opcode)
+    
+    def on(self, event_name):
+        def decorator(func):
+            def exec(event):
+                print (event)
+                func(event)
+            return exec 
+        return decorator
+    #to use: .on(eventname)(handler1)(data)
+            
+    def emit(self, event_name, event):
+        #emit(event.name, event)
+        #actions(event_name)()
+        pass
 
     def send_event(self, event, ws, data):
         #self._event_call(events[event], ws, data)
@@ -614,6 +628,15 @@ if __name__=='__main__':
     #wserver = WebSocketClient()
     ws = daemon_role.get(id, WebSocketClient)()
 
+
+    # to use this as callback may ok: ws.on("logout", logout), but not @ws.con()....
+
+    @ws.on("login")
+    def handle1(data):
+        print('OK')
+        #ws.emit(event.name, event)
+        #ws.broadcast()
+    
     ws.on_msg = on_msg
     ws.on_ping = on_ping
     ws.on_pong = on_pong
