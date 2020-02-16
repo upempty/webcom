@@ -5,6 +5,7 @@ import time
 import sys
 import _thread as thread
 import select
+import json
 
 OPCODE_TEXT  = 0x1
 OPCODE_CLOSE = 0x8
@@ -70,11 +71,18 @@ class WebSocketServer:
                 continue
             w.send(msg, opcode=OPCODE_TEXT)
             print ('broadcast!!!!!')
-        
+            
     def send(self, ws, data, opcode=OPCODE_TEXT):
         print ('==write:', data)
         ws.send(data, opcode)
 
+    def send_event(self, event, ws, data):
+        #self._event_call(events[event], ws, data)
+        msg = {'action': event, 'data': data} #use call back for chat fun related, not here inside lib.
+        #{event: func, event2, func2, login:fun, groupchat:fun, peersend:fun}
+        ws.send(json.dumps(msg), opcode)
+
+        
     def handle_recv(self, ws):
         print ('read on server')
         msg, opcode = ws.recv()
