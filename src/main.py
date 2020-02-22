@@ -22,7 +22,7 @@ class WebSocketServer:
         self.on_msg = on_msg
         self.on_ping = on_ping
         self.on_pong = on_pong
-
+        self.handlers = {}
 
         self.wss = {}       
         self.read_socks = []
@@ -76,15 +76,13 @@ class WebSocketServer:
         print ('==write:', data)
         ws.send(data, opcode)
     
-    def on(self, event_name):
-        def decorator(func):
-            def exec(event):
-                print (event)
-                func(event)
-            return exec 
-        return decorator
-    #to use: .on(eventname)(handler1)(data)
-            
+    def on_event(self, event):
+        def set_event_handler(handler):
+            print (event)
+            self.handlers[event] = handler
+            return handler
+        return set_event_handler
+
     def emit(self, event_name, event):
         #emit(event.name, event)
         #actions(event_name)()
@@ -113,6 +111,7 @@ class WebSocketServer:
             return
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback(self.CALLBACKS[opcode], ws, msg)
+        self.handlers['login'](msg)
         if opcode == OPCODE_TEXT:
             self.multicast(ws, msg)
 
@@ -628,12 +627,9 @@ if __name__=='__main__':
     #wserver = WebSocketClient()
     ws = daemon_role.get(id, WebSocketClient)()
 
-
-    # to use this as callback may ok: ws.on("logout", logout), but not @ws.con()....
-
-    @ws.on("login")
+    @ws.on_event("login")
     def handle1(data):
-        print('OK')
+        print('!!!!!!!!!!!!!!!OK ws.on_event decorator called:', data)
         #ws.emit(event.name, event)
         #ws.broadcast()
     
