@@ -111,7 +111,7 @@ class WebSocketServer:
             return
         print ("received msg and opcode, callback func::", msg, opcode, self.CALLBACKS[opcode])
         self._callback(self.CALLBACKS[opcode], ws, msg)
-        self.handlers['login'](msg)
+        self.handlers['login'](ws, msg)
         if opcode == OPCODE_TEXT:
             self.multicast(ws, msg)
 
@@ -628,8 +628,9 @@ if __name__=='__main__':
     ws = daemon_role.get(id, WebSocketClient)()
 
     @ws.on_event("login")
-    def handle1(data):
+    def handle1(ws_single, data):
         print('!!!!!!!!!!!!!!!OK ws.on_event decorator called:', data)
+        ws.multicast(ws_single, data) 
         #ws.emit(event.name, event)
         #ws.broadcast()
     
