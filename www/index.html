@@ -116,7 +116,9 @@
             var s=e.data.replace(/(\r\n)|(\n)/g,'<br>');
             //mess.innerHTML=(s+"<br>"+mess.innerHTML);
             //Words.innerHTML = Words.innerHTML + s;
-            Words.innerHTML = Words.innerHTML + e.data;
+            str = '<div class="btalk"><span>B : ' + e.data +'</span></div>' ;  
+            //Words.innerHTML = Words.innerHTML + e.data;
+            Words.innerHTML = Words.innerHTML + str;
         }
 
         function send_msg() {
@@ -129,7 +131,8 @@
                 str = '<div class="atalk"><span>A : ' + TalkWords.value +'</span></div>';
             }
             else{
-                str = '<div class="btalk"><span>B : ' + TalkWords.value +'</span></div>' ;  
+                //str = '<div class="btalk"><span>B : ' + TalkWords.value +'</span></div>' ;  
+                str = '{"message":' + TalkWords.value + '}';  
             }
             ws.send(str);
         }
